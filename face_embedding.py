@@ -45,7 +45,10 @@ class FaceEmbedding:
                     self.sess = sess
                     # Load the model
                     facenet.load_model(self.model_dir)
-                    
+
+                    # output_node_names = [n.name for n in tf.get_default_graph().as_graph_def().node]
+                    # print('output_node_names: ',output_node_names)
+
                     # Get input and output tensors
                     images_placeholder = tf.get_default_graph().get_tensor_by_name("input:0")
                     self.images_placeholder = tf.image.resize_images(images_placeholder,(self.image_size, self.image_size))
@@ -54,6 +57,7 @@ class FaceEmbedding:
                     self.embedding_size = self.embeddings.get_shape()[1]
                     if not single:
                         for filename in os.listdir(self.data_path):
+                            print('filename: ',filename)
                             img = cv2.imread(self.data_path+"/"+filename, 1)
                             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                             bounding_boxes, points = self.alignMTCNN.get_bounding_boxes(image=img)
@@ -107,6 +111,7 @@ class FaceEmbedding:
         return faces
 
     def get_embedding(self, processed_img):
+        print('processed_img: ',processed_img.shape)
         reshaped = processed_img.reshape(-1, self.image_size, self.image_size, 3)
         feed_dict = {self.images_placeholder:reshaped, self.phase_train_placeholder:False }
         feature_vector = self.sess.run(self.embeddings, feed_dict=feed_dict)
@@ -128,7 +133,12 @@ class FaceEmbedding:
 
 if __name__ == '__main__':
     face_embedding = FaceEmbedding()
+    embedding = face_embedding.convert_to_embedding()
+
+    face_embedding = FaceEmbedding()
     embedding = face_embedding.convert_to_embedding(single=True, img_path='face6.jpg')
+
+    print('embedding length: ',len(embedding[0]['embedding'][0]))
     #embedding = face_embedding.convert_to_embedding()
     emb_list = face_embedding.load_pickle()
     face_embedding.ecuclidean_distance(emb_list, embedding)
